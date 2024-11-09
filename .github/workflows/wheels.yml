@@ -19,9 +19,9 @@ on:
 env:
   DEFAULT_PYTHON: "3.13"
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref_name}}
-  cancel-in-progress: true
+# concurrency:
+#   group: ${{ github.workflow }}-${{ github.ref_name}}
+#   cancel-in-progress: true
 
 jobs:
   init:
@@ -222,9 +222,10 @@ jobs:
       - name: Create requirements file for custom build
         run: |
           touch requirements_custom.txt
+          echo -n "cython==3.2.1" >> requirements_custom.txt
 
       - name: Modify requirements file for custom build
-        if: contains(fromJSON('["armv7", "armhf"]'), matrix.arch)
+        # if: contains(fromJSON('["armv7", "armhf"]'), matrix.arch)
         id: modify-requirements
         run: |
           echo "  # force update" >> requirements_custom.txt
