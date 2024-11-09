@@ -80,6 +80,8 @@ jobs:
 
             # Add additional pip wheel build constraints
             echo "PIP_CONSTRAINT=build_constraints.txt"
+
+            echo 'CFLAGS="-Wno-incompatible-pointer-types"'
           ) > .env_file
 
       - name: Write pip wheel build constraints
@@ -222,6 +224,7 @@ jobs:
       - name: Create requirements file for custom build
         run: |
           touch requirements_custom.txt
+          echo "av==13.1.0" >> requirements_custom.txt
 
       - name: Build wheels (custom)
         uses: cdce8p/wheels@master
