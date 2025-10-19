@@ -132,7 +132,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix: &matrix-build
-        abi: ["cp313", "cp314"]
+        abi: ["cp314"]
         arch: ${{ fromJson(needs.init.outputs.architectures) }}
         include:
           - os: ubuntu-latest
