@@ -3,8 +3,25 @@
 from homeassistant.core import HomeAssistant, State
 from homeassistant.helpers.trigger import EntityTriggerBase, Trigger
 
-from . import MediaPlayerState
+from . import ATTR_MEDIA_VOLUME_LEVEL, ATTR_MEDIA_VOLUME_MUTED, MediaPlayerState
 from .const import DOMAIN
+
+
+class MediaPlayerMutedTrigger(EntityTriggerBase):
+    """Class for media player muted triggers."""
+
+    _domain: str = DOMAIN
+
+    def is_muted(self, state: State) -> bool:
+        """Check if the media player is muted."""
+        return (
+            state.attributes.get(ATTR_MEDIA_VOLUME_MUTED) is True
+            or state.attributes.get(ATTR_MEDIA_VOLUME_LEVEL) == 0
+        )
+
+    def is_to_state(self, state: State) -> bool:
+        """Check if the state matches the target state."""
+        return self.is_muted(state)
 
 
 class MediaPlayerStoppedPlayingTrigger(EntityTriggerBase):
@@ -32,6 +49,7 @@ class MediaPlayerStoppedPlayingTrigger(EntityTriggerBase):
 
 
 TRIGGERS: dict[str, type[Trigger]] = {
+    "muted": MediaPlayerMutedTrigger,
     "stopped_playing": MediaPlayerStoppedPlayingTrigger,
 }
 

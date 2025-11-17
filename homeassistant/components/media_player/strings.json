@@ -376,13 +376,24 @@
   },
   "title": "Media player",
   "triggers": {
+    "muted": {
+      "description": "Triggers when a media player is muted.",
+      "description_configured": "[%key:component::media_player::triggers::muted::description%]",
+      "fields": {
+        "behavior": {
+          "description": "The behavior of the targeted media players to trigger on.",
+          "name": "Behavior"
+        }
+      },
+      "name": "When a media player is muted"
+    },
     "stopped_playing": {
       "description": "Triggers when a media player stops playing.",
       "description_configured": "[%key:component::media_player::triggers::stopped_playing::description%]",
       "fields": {
         "behavior": {
-          "description": "The behavior of the targeted media players to trigger on.",
-          "name": "Behavior"
+          "description": "%key:component::media_player::triggers::muted::behavior::description%",
+          "name": "%key:component::media_player::triggers::muted::behavior::name%"
         }
       },
       "name": "When a media player stops playing"
