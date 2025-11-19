@@ -2,21 +2,16 @@
 
 import pytest
 
-from homeassistant.components import automation
-from homeassistant.const import (
-    CONF_ENTITY_ID,
-    CONF_OPTIONS,
-    CONF_PLATFORM,
-    CONF_TARGET,
-    STATE_OFF,
-    STATE_ON,
-)
+from homeassistant.const import CONF_ENTITY_ID, STATE_OFF, STATE_ON
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.setup import async_setup_component
 
 from tests.components import (
+    StateDescription,
+    arm_trigger,
     parametrize_target_entities,
     parametrize_trigger_states,
+    set_or_remove_state,
     target_entities,
 )
 
@@ -32,37 +27,6 @@ async def target_lights(hass: HomeAssistant) -> None:
     return await target_entities(hass, "light")
 
 
-def set_or_remove_state(hass: HomeAssistant, entity_id: str, state: str | None) -> None:
-    """Set or clear the state of an entity."""
-    if state is None:
-        hass.states.async_remove(entity_id)
-    else:
-        hass.states.async_set(entity_id, state, force_update=True)
-
-
-async def setup_automation(
-    hass: HomeAssistant, trigger: str, trigger_options: dict, trigger_target: dict
-) -> None:
-    """Set up automation component with given config."""
-    await async_setup_component(
-        hass,
-        automation.DOMAIN,
-        {
-            automation.DOMAIN: {
-                "trigger": {
-                    CONF_PLATFORM: trigger,
-                    CONF_OPTIONS: {**trigger_options},
-                    CONF_TARGET: {**trigger_target},
-                },
-                "action": {
-                    "service": "test.automation",
-                    "data_template": {CONF_ENTITY_ID: "{{ trigger.entity_id }}"},
-                },
-            }
-        },
-    )
-
-
 @pytest.mark.parametrize(
     ("trigger_target_config", "entity_id", "entities_in_target"),
     parametrize_target_entities("light"),
@@ -70,8 +34,16 @@ async def setup_automation(
 @pytest.mark.parametrize(
     ("trigger", "states"),
     [
-        *parametrize_trigger_states("light.turned_on", (STATE_ON,), (STATE_OFF,)),
-        *parametrize_trigger_states("light.turned_off", (STATE_OFF,), (STATE_ON,)),
+        *parametrize_trigger_states(
+            trigger="light.turned_on",
+            target_states=[STATE_ON],
+            other_states=[STATE_OFF],
+        ),
+        *parametrize_trigger_states(
+            trigger="light.turned_off",
+            target_states=[STATE_OFF],
+            other_states=[STATE_ON],
+        ),
     ],
 )
 async def test_light_state_trigger_behavior_any(
@@ -82,7 +54,7 @@ async def test_light_state_trigger_behavior_any(
     entity_id: str,
     entities_in_target: int,
     trigger: str,
-    states: list[tuple[str, int]],
+    states: list[StateDescription],
 ) -> None:
     """Test that the light state trigger fires when any light state changes to a specific state."""
     await async_setup_component(hass, "light", {})
@@ -91,24 +63,24 @@ async def test_light_state_trigger_behavior_any(
 
     # Set all lights, including the tested light, to the initial state
     for eid in target_lights:
-        set_or_remove_state(hass, eid, states[0][0])
+        set_or_remove_state(hass, eid, states[0]["state"])
         await hass.async_block_till_done()
 
-    await setup_automation(hass, trigger, {}, trigger_target_config)
+    await arm_trigger(hass, trigger, {}, trigger_target_config)
 
-    for state, expected_calls in states[1:]:
-        set_or_remove_state(hass, entity_id, state)
+    for state in states[1:]:
+        set_or_remove_state(hass, entity_id, state["state"])
         await hass.async_block_till_done()
-        assert len(service_calls) == expected_calls
+        assert len(service_calls) == state["count"]
         for service_call in service_calls:
             assert service_call.data[CONF_ENTITY_ID] == entity_id
         service_calls.clear()
 
         # Check if changing other lights also triggers
         for other_entity_id in other_entity_ids:
-            set_or_remove_state(hass, other_entity_id, state)
+            set_or_remove_state(hass, other_entity_id, state["state"])
             await hass.async_block_till_done()
-        assert len(service_calls) == (entities_in_target - 1) * expected_calls
+        assert len(service_calls) == (entities_in_target - 1) * state["count"]
         service_calls.clear()
 
 
@@ -119,8 +91,16 @@ async def test_light_state_trigger_behavior_any(
 @pytest.mark.parametrize(
     ("trigger", "states"),
     [
-        *parametrize_trigger_states("light.turned_on", (STATE_ON,), (STATE_OFF,)),
-        *parametrize_trigger_states("light.turned_off", (STATE_OFF,), (STATE_ON,)),
+        *parametrize_trigger_states(
+            trigger="light.turned_on",
+            target_states=[STATE_ON],
+            other_states=[STATE_OFF],
+        ),
+        *parametrize_trigger_states(
+            trigger="light.turned_off",
+            target_states=[STATE_OFF],
+            other_states=[STATE_ON],
+        ),
     ],
 )
 async def test_light_state_trigger_behavior_first(
@@ -131,7 +111,7 @@ async def test_light_state_trigger_behavior_first(
     entity_id: str,
     entities_in_target: int,
     trigger: str,
-    states: list[tuple[str, int, list[str]]],
+    states: list[StateDescription],
 ) -> None:
     """Test that the light state trigger fires when the first light changes to a specific state."""
     await async_setup_component(hass, "light", {})
@@ -140,22 +120,22 @@ async def test_light_state_trigger_behavior_first(
 
     # Set all lights, including the tested light, to the initial state
     for eid in target_lights:
-        set_or_remove_state(hass, eid, states[0][0])
+        set_or_remove_state(hass, eid, states[0]["state"])
         await hass.async_block_till_done()
 
-    await setup_automation(hass, trigger, {"behavior": "first"}, trigger_target_config)
+    await arm_trigger(hass, trigger, {"behavior": "first"}, trigger_target_config)
 
-    for state, expected_calls in states[1:]:
-        set_or_remove_state(hass, entity_id, state)
+    for state in states[1:]:
+        set_or_remove_state(hass, entity_id, state["state"])
         await hass.async_block_till_done()
-        assert len(service_calls) == expected_calls
+        assert len(service_calls) == state["count"]
         for service_call in service_calls:
             assert service_call.data[CONF_ENTITY_ID] == entity_id
         service_calls.clear()
 
         # Triggering other lights should not cause the trigger to fire again
         for other_entity_id in other_entity_ids:
-            set_or_remove_state(hass, other_entity_id, state)
+            set_or_remove_state(hass, other_entity_id, state["state"])
             await hass.async_block_till_done()
         assert len(service_calls) == 0
 
@@ -167,8 +147,16 @@ async def test_light_state_trigger_behavior_first(
 @pytest.mark.parametrize(
     ("trigger", "states"),
     [
-        *parametrize_trigger_states("light.turned_on", (STATE_ON,), (STATE_OFF,)),
-        *parametrize_trigger_states("light.turned_off", (STATE_OFF,), (STATE_ON,)),
+        *parametrize_trigger_states(
+            trigger="light.turned_on",
+            target_states=[STATE_ON],
+            other_states=[STATE_OFF],
+        ),
+        *parametrize_trigger_states(
+            trigger="light.turned_off",
+            target_states=[STATE_OFF],
+            other_states=[STATE_ON],
+        ),
     ],
 )
 async def test_light_state_trigger_behavior_last(
@@ -179,7 +167,7 @@ async def test_light_state_trigger_behavior_last(
     entity_id: str,
     entities_in_target: int,
     trigger: str,
-    states: list[tuple[str, int]],
+    states: list[StateDescription],
 ) -> None:
     """Test that the light state trigger fires when the last light changes to a specific state."""
     await async_setup_component(hass, "light", {})
@@ -188,20 +176,20 @@ async def test_light_state_trigger_behavior_last(
 
     # Set all lights, including the tested light, to the initial state
     for eid in target_lights:
-        set_or_remove_state(hass, eid, states[0][0])
+        set_or_remove_state(hass, eid, states[0]["state"])
         await hass.async_block_till_done()
 
-    await setup_automation(hass, trigger, {"behavior": "last"}, trigger_target_config)
+    await arm_trigger(hass, trigger, {"behavior": "last"}, trigger_target_config)
 
-    for state, expected_calls in states[1:]:
+    for state in states[1:]:
         for other_entity_id in other_entity_ids:
-            set_or_remove_state(hass, other_entity_id, state)
+            set_or_remove_state(hass, other_entity_id, state["state"])
             await hass.async_block_till_done()
         assert len(service_calls) == 0
 
-        set_or_remove_state(hass, entity_id, state)
+        set_or_remove_state(hass, entity_id, state["state"])
         await hass.async_block_till_done()
-        assert len(service_calls) == expected_calls
+        assert len(service_calls) == state["count"]
         for service_call in service_calls:
             assert service_call.data[CONF_ENTITY_ID] == entity_id
         service_calls.clear()
