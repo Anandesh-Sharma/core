@@ -17,5 +17,5 @@
 started_cooling: *trigger_common
 started_drying: *trigger_common
 started_heating: *trigger_common
-
 turned_off: *trigger_common
+turned_on: *trigger_common
