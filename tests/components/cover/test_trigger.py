@@ -28,6 +28,57 @@ async def target_covers(hass: HomeAssistant) -> None:
     return await target_entities(hass, "cover")
 
 
+def parametrize_closed_trigger_states(
+    trigger: str, device_class: str
+) -> list[tuple[str, dict, str, list[StateDescription]]]:
+    """Parametrize states and expected service call counts.
+
+    Returns a list of tuples with (trigger, trigger_options,
+    list of StateDescription).
+    """
+    additional_attributes = {ATTR_DEVICE_CLASS: device_class}
+    return [
+        # Test fully_closed = True
+        *(
+            (s[0], {"fully_closed": True}, *s[1:])
+            for s in parametrize_trigger_states(
+                trigger=trigger,
+                target_states=[
+                    (CoverState.CLOSED, {}),
+                    (CoverState.CLOSING, {}),
+                    (CoverState.CLOSED, {ATTR_CURRENT_POSITION: 0}),
+                    (CoverState.CLOSING, {ATTR_CURRENT_POSITION: 0}),
+                ],
+                other_states=[
+                    (CoverState.OPEN, {}),
+                    (CoverState.CLOSED, {ATTR_CURRENT_POSITION: 1}),
+                ],
+                additional_attributes=additional_attributes,
+                trigger_from_none=False,
+            )
+        ),
+        # Test fully_closed = False
+        *(
+            (s[0], {}, *s[1:])
+            for s in parametrize_trigger_states(
+                trigger=trigger,
+                target_states=[
+                    (CoverState.CLOSED, {}),
+                    (CoverState.CLOSING, {}),
+                    (CoverState.CLOSED, {ATTR_CURRENT_POSITION: 99}),
+                    (CoverState.CLOSING, {ATTR_CURRENT_POSITION: 99}),
+                ],
+                other_states=[
+                    (CoverState.OPEN, {}),
+                    (CoverState.OPEN, {ATTR_CURRENT_POSITION: 1}),
+                ],
+                additional_attributes=additional_attributes,
+                trigger_from_none=False,
+            )
+        ),
+    ]
+
+
 def parametrize_opened_trigger_states(
     trigger: str, device_class: str
 ) -> list[tuple[str, dict, str, list[StateDescription]]]:
@@ -86,6 +137,15 @@ def parametrize_opened_trigger_states(
 @pytest.mark.parametrize(
     ("trigger", "trigger_options", "states"),
     [
+        *parametrize_closed_trigger_states("cover.awning_closed", "awning"),
+        *parametrize_closed_trigger_states("cover.blind_closed", "blind"),
+        *parametrize_closed_trigger_states("cover.curtain_closed", "curtain"),
+        *parametrize_closed_trigger_states("cover.door_closed", "door"),
+        *parametrize_closed_trigger_states("cover.garage_closed", "garage"),
+        *parametrize_closed_trigger_states("cover.gate_closed", "gate"),
+        *parametrize_closed_trigger_states("cover.shade_closed", "shade"),
+        *parametrize_closed_trigger_states("cover.shutter_closed", "shutter"),
+        *parametrize_closed_trigger_states("cover.window_closed", "window"),
         *parametrize_opened_trigger_states("cover.awning_opened", "awning"),
         *parametrize_opened_trigger_states("cover.blind_opened", "blind"),
         *parametrize_opened_trigger_states("cover.curtain_opened", "curtain"),
@@ -143,6 +203,15 @@ async def test_cover_state_attribute_trigger_behavior_any(
 @pytest.mark.parametrize(
     ("trigger", "trigger_options", "states"),
     [
+        *parametrize_closed_trigger_states("cover.awning_closed", "awning"),
+        *parametrize_closed_trigger_states("cover.blind_closed", "blind"),
+        *parametrize_closed_trigger_states("cover.curtain_closed", "curtain"),
+        *parametrize_closed_trigger_states("cover.door_closed", "door"),
+        *parametrize_closed_trigger_states("cover.garage_closed", "garage"),
+        *parametrize_closed_trigger_states("cover.gate_closed", "gate"),
+        *parametrize_closed_trigger_states("cover.shade_closed", "shade"),
+        *parametrize_closed_trigger_states("cover.shutter_closed", "shutter"),
+        *parametrize_closed_trigger_states("cover.window_closed", "window"),
         *parametrize_opened_trigger_states("cover.awning_opened", "awning"),
         *parametrize_opened_trigger_states("cover.blind_opened", "blind"),
         *parametrize_opened_trigger_states("cover.curtain_opened", "curtain"),
@@ -204,6 +273,15 @@ async def test_cover_state_attribute_trigger_behavior_first(
 @pytest.mark.parametrize(
     ("trigger", "trigger_options", "states"),
     [
+        *parametrize_closed_trigger_states("cover.awning_closed", "awning"),
+        *parametrize_closed_trigger_states("cover.blind_closed", "blind"),
+        *parametrize_closed_trigger_states("cover.curtain_closed", "curtain"),
+        *parametrize_closed_trigger_states("cover.door_closed", "door"),
+        *parametrize_closed_trigger_states("cover.garage_closed", "garage"),
+        *parametrize_closed_trigger_states("cover.gate_closed", "gate"),
+        *parametrize_closed_trigger_states("cover.shade_closed", "shade"),
+        *parametrize_closed_trigger_states("cover.shutter_closed", "shutter"),
+        *parametrize_closed_trigger_states("cover.window_closed", "window"),
         *parametrize_opened_trigger_states("cover.awning_opened", "awning"),
         *parametrize_opened_trigger_states("cover.blind_opened", "blind"),
         *parametrize_opened_trigger_states("cover.curtain_opened", "curtain"),
