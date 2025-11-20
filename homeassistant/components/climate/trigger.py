@@ -12,6 +12,12 @@ from .const import ATTR_HVAC_ACTION, DOMAIN, HVACAction
 
 TRIGGERS: dict[str, type[Trigger]] = {
     "turned_off": make_entity_state_trigger(DOMAIN, STATE_OFF),
+    "started_cooling": make_entity_state_attribute_trigger(
+        DOMAIN, ATTR_HVAC_ACTION, HVACAction.COOLING
+    ),
+    "started_drying": make_entity_state_attribute_trigger(
+        DOMAIN, ATTR_HVAC_ACTION, HVACAction.DRYING
+    ),
     "started_heating": make_entity_state_attribute_trigger(
         DOMAIN, ATTR_HVAC_ACTION, HVACAction.HEATING
     ),
